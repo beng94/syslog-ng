@@ -439,6 +439,110 @@ main_loop_init(void)
   setup_signals();
 }
 
+#include <logpipe.h>
+
+static gchar*
+cfg_viz_get_node_name(LogExprNode *node, gchar* buf, size_t size)
+{
+    g_snprintf(buf, size, "%s", node->name);
+}
+
+static void
+cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file)
+{
+    fprintf(file, "\t\"%p\" -> \"%p\";\n", node_parent, node_child);
+}
+
+static const char*
+cfg_viz_node_get_shape(const gint content)
+{
+    switch(content)
+    {
+        case ENC_PIPE:
+            return "triangle";
+        case ENC_SOURCE:
+            return "box";
+        case ENC_DESTINATION:
+            return "doublecircle";
+        case ENC_FILTER:
+            return "diamond";
+        case ENC_PARSER:
+            return "circle";
+        case ENC_REWRITE:
+            return "parallelogram";
+        default:
+            return "star";
+    }
+}
+
+static void
+cfg_viz_print_node_props(LogExprNode *node, FILE *file)
+{
+    gchar name_buf[32];
+
+    //To handle filters
+    if(node->layout == ENL_SINGLE && node->content == ENC_PIPE)
+        cfg_viz_get_node_name(node->parent, name_buf, sizeof(name_buf));
+    else
+        cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
+
+    fprintf(file, "\t\"%p\" [label=\"%s\" shape=\"%s\"];\n",
+                node,
+                name_buf,
+                cfg_viz_node_get_shape(node->content));
+}
+
+static void
+cfg_viz_traverse_pipe(LogPipe *pipe, FILE *file)
+{
+    cfg_viz_print_node_props(pipe->expr_node, file);
+
+    if(pipe->pipe_next)
+    {
+        //To avoid log sequence
+        if(pipe->pipe_next->expr_node->content == ENC_PIPE &&
+           pipe->pipe_next->expr_node->layout == ENL_SEQUENCE)
+        {
+            //TODO: Might segfault if there's nothing after the filter
+            cfg_viz_print_edge(pipe->expr_node, pipe->pipe_next->pipe_next->expr_node, file);
+            cfg_viz_traverse_pipe(pipe->pipe_next->pipe_next, file);
+            return;
+        }
+        else
+        {
+            cfg_viz_print_edge(pipe->expr_node, pipe->pipe_next->expr_node, file);
+            cfg_viz_traverse_pipe(pipe->pipe_next, file);
+        }
+    }
+}
+
+static void
+cfg_viz_init(GlobalConfig *config)
+{
+    FILE *file = fopen("/home/bence/Desktop/cfg_out.dot", "w+");
+
+    if(!file)
+    {
+        printf("Could not open file\n");
+        return;
+    }
+
+    fprintf(file, "digraph G\n{\n");
+
+    int i;
+    for(i = 0; i < config->tree.initialized_pipes->len; i++)
+    {
+        LogPipe *pipe = (LogPipe *)g_ptr_array_index(config->tree.initialized_pipes, i);
+
+        if(pipe->expr_node->content == ENC_SOURCE &&
+           pipe->expr_node->layout == ENL_REFERENCE)
+            cfg_viz_traverse_pipe(pipe, file);
+    }
+
+    fprintf(file, "}");
+    fclose(file);
+}
+
 /*
  * Returns: exit code to be returned to the calling process, 0 on success.
  */
@@ -460,6 +564,11 @@ main_loop_read_and_init_config(void)
     {
       return 2;
     }
+
+  int cfg_viz = 1;
+  if(cfg_viz)
+    cfg_viz_init(current_configuration);
+
   return 0;
 }
 
