@@ -441,16 +441,39 @@ main_loop_init(void)
 
 #include <logpipe.h>
 
-static gchar*
+static void
 cfg_viz_get_node_name(LogExprNode *node, gchar* buf, size_t size)
 {
     g_snprintf(buf, size, "%s", node->name);
 }
 
 static void
+cfg_viz_print_node_id(LogExprNode *node, gchar* buf, size_t size)
+{
+    gchar name_buf[32];
+
+    //To handle filters
+    if(node->layout == ENL_SINGLE && node->content == ENC_PIPE)
+        cfg_viz_get_node_name(node->parent, name_buf, sizeof(name_buf));
+    else
+        cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
+
+     g_snprintf(buf, size, "%d%d%s",
+             node->layout,
+             node->content,
+             name_buf);
+}
+
+static void
 cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file)
 {
-    fprintf(file, "\t\"%p\" -> \"%p\";\n", node_parent, node_child);
+    gchar buf_parent[32];
+    gchar buf_child[32];
+
+    cfg_viz_print_node_id(node_parent, buf_parent, sizeof(buf_parent));
+    cfg_viz_print_node_id(node_child, buf_child, sizeof(buf_child));
+
+    fprintf(file, "\t\"%s\" -> \"%s\";\n", buf_parent, buf_child);
 }
 
 static const char*
@@ -486,8 +509,10 @@ cfg_viz_print_node_props(LogExprNode *node, FILE *file)
     else
         cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
 
-    fprintf(file, "\t\"%p\" [label=\"%s\" shape=\"%s\"];\n",
-                node,
+    fprintf(file, "\t\"%d%d%s\" [label=\"%s\" shape=\"%s\"];\n",
+                node->layout,
+                node->content,
+                name_buf,
                 name_buf,
                 cfg_viz_node_get_shape(node->content));
 }
@@ -538,6 +563,8 @@ cfg_viz_init(GlobalConfig *config)
            pipe->expr_node->layout == ENL_REFERENCE)
             cfg_viz_traverse_pipe(pipe, file);
     }
+
+    //TODO: Color the edges
 
     fprintf(file, "}");
     fclose(file);
