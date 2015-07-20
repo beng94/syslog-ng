@@ -444,19 +444,18 @@ main_loop_init(void)
 static void
 cfg_viz_get_node_name(LogExprNode *node, gchar* buf, size_t size)
 {
-    g_snprintf(buf, size, "%s", node->name);
+    //To handle filters
+    if(node->layout == ENL_SINGLE && node->content == ENC_PIPE)
+        g_snprintf(buf, size, "%s", node->parent->name);
+    else
+       g_snprintf(buf, size, "%s", node->name);
 }
 
 static void
 cfg_viz_print_node_id(LogExprNode *node, gchar* buf, size_t size)
 {
     gchar name_buf[32];
-
-    //To handle filters
-    if(node->layout == ENL_SINGLE && node->content == ENC_PIPE)
-        cfg_viz_get_node_name(node->parent, name_buf, sizeof(name_buf));
-    else
-        cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
+    cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
 
      g_snprintf(buf, size, "%d%d%s",
              node->layout,
@@ -502,18 +501,14 @@ static void
 cfg_viz_print_node_props(LogExprNode *node, FILE *file)
 {
     gchar name_buf[32];
+    cfg_viz_print_node_id(node, name_buf, sizeof(name_buf));
 
-    //To handle filters
-    if(node->layout == ENL_SINGLE && node->content == ENC_PIPE)
-        cfg_viz_get_node_name(node->parent, name_buf, sizeof(name_buf));
-    else
-        cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
+    gchar node_name[32];
+    cfg_viz_get_node_name(node, node_name, sizeof(node_name));
 
-    fprintf(file, "\t\"%d%d%s\" [label=\"%s\" shape=\"%s\"];\n",
-                node->layout,
-                node->content,
+    fprintf(file, "\t\"%s\" [label=\"%s\" shape=\"%s\"];\n",
                 name_buf,
-                name_buf,
+                node_name,
                 cfg_viz_node_get_shape(node->content));
 }
 
