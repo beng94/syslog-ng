@@ -441,6 +441,17 @@ main_loop_init(void)
 
 #include <logpipe.h>
 
+static int count = 0;
+static int color_count = 31;
+
+const gchar* color[] =
+{ "blue", "brown", "coral", "chartreuse", "cadetblue",
+  "crimson", "cyan", "darkgreen", "darkorange", "deeppink",
+  "gold", "firebrick", "darkslateblue","green", "greenyellow",
+  "hotpink", "indigo", "lightcoral", "limegreen", "maroon",
+  "navy", "orange", "orangered", "orchid", "peru", "red",
+  "royalblue", "tan", "yellow", "violet", "yellowgreen" };
+
 static void
 cfg_viz_get_node_name(LogExprNode *node, gchar* buf, size_t size)
 {
@@ -472,7 +483,10 @@ cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file
     cfg_viz_print_node_id(node_parent, buf_parent, sizeof(buf_parent));
     cfg_viz_print_node_id(node_child, buf_child, sizeof(buf_child));
 
-    fprintf(file, "\t\"%s\" -> \"%s\";\n", buf_parent, buf_child);
+    fprintf(file, "\t\"%s\" -> \"%s\"[color=%s];\n",
+            buf_parent,
+            buf_child,
+            color[count]);
 }
 
 static const char*
@@ -556,10 +570,14 @@ cfg_viz_init(GlobalConfig *config)
 
         if(pipe->expr_node->content == ENC_SOURCE &&
            pipe->expr_node->layout == ENL_REFERENCE)
+        {
             cfg_viz_traverse_pipe(pipe, file);
-    }
 
-    //TODO: Color the edges
+            count++;
+            if(count == color_count)
+                count = 0;
+        }
+    }
 
     fprintf(file, "}");
     fclose(file);
