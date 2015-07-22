@@ -468,8 +468,7 @@ cfg_viz_print_node_id(LogExprNode *node, gchar* buf, size_t size)
     gchar name_buf[32];
     cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
 
-     g_snprintf(buf, size, "%d%d%s",
-             node->layout,
+     g_snprintf(buf, size, "%d%s",
              node->content,
              name_buf);
 }
@@ -527,20 +526,57 @@ cfg_viz_print_node_props(LogExprNode *node, FILE *file)
 }
 
 static void
+cfg_viz_print_channel(LogExprNode *node, LogExprNode *fork, LogExprNode *join, FILE *file)
+{
+    if(fork)
+        cfg_viz_print_edge(fork, node, file);
+
+    while(node->next)
+    {
+        cfg_viz_print_edge(node, node->next, file);
+        node = node->next;
+    }
+
+    if(join)
+        cfg_viz_print_edge(node, join, file);
+}
+
+static void cfg_viz_traverse_pipe(LogPipe *pipe, FILE *file);
+
+static void
+cfg_viz_print_junction(LogExprNode *junction, LogExprNode *fork, LogExprNode *join, FILE *file)
+{
+    cfg_viz_print_channel(junction->children->children, fork, join, file);
+    junction = junction->children;
+
+    while(junction->next)
+    {
+        cfg_viz_print_channel(junction->children, fork, join, file);
+
+        junction = junction->next;
+    }
+
+    cfg_viz_print_channel(junction->children, fork, join, file);
+}
+
+static void
 cfg_viz_traverse_pipe(LogPipe *pipe, FILE *file)
 {
-    cfg_viz_print_node_props(pipe->expr_node, file);
-
     if(pipe->pipe_next)
     {
         //To avoid log sequence
-        if(pipe->pipe_next->expr_node->content == ENC_PIPE &&
+        /*if(pipe->pipe_next->expr_node->content == ENC_PIPE &&
            pipe->pipe_next->expr_node->layout == ENL_SEQUENCE)
         {
             //TODO: Might segfault if there's nothing after the filter
             cfg_viz_print_edge(pipe->expr_node, pipe->pipe_next->pipe_next->expr_node, file);
             cfg_viz_traverse_pipe(pipe->pipe_next->pipe_next, file);
             return;
+        }*/
+        if(pipe->pipe_next->expr_node->content == ENC_PIPE &&
+                pipe->pipe_next->expr_node->layout == ENL_JUNCTION)
+        {
+            cfg_viz_print_junction(pipe->pipe_next->expr_node, pipe->expr_node, pipe->pipe_next->expr_node->next, file);
         }
         else
         {
