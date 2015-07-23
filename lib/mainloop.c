@@ -676,6 +676,12 @@ cfg_viz_init(GlobalConfig *config)
         if(pipe->expr_node->content == ENC_SOURCE &&
            pipe->expr_node->layout == ENL_REFERENCE)
         {
+            if(pipe->expr_node->parent->children != pipe->expr_node &&
+               pipe->expr_node->parent->children->content == ENC_SOURCE &&
+               pipe->expr_node->parent->children->layout == ENL_REFERENCE)
+            {
+                continue;
+            }
             //cfg_viz_traverse_pipe(pipe, file);
             cfg_viz_print_tree(pipe->expr_node, file);
 
