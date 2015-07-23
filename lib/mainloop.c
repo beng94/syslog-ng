@@ -525,7 +525,7 @@ cfg_viz_print_node_props(LogExprNode *node, FILE *file)
                 cfg_viz_node_get_shape(node->content));
 }
 
-static void
+/*static void
 cfg_viz_print_channel(LogExprNode *node, LogExprNode *fork, LogExprNode *join, FILE *file)
 {
     if(fork)
@@ -565,14 +565,14 @@ cfg_viz_traverse_pipe(LogPipe *pipe, FILE *file)
     if(pipe->pipe_next)
     {
         //To avoid log sequence
-        /*if(pipe->pipe_next->expr_node->content == ENC_PIPE &&
+        if(pipe->pipe_next->expr_node->content == ENC_PIPE &&
            pipe->pipe_next->expr_node->layout == ENL_SEQUENCE)
         {
             //TODO: Might segfault if there's nothing after the filter
             cfg_viz_print_edge(pipe->expr_node, pipe->pipe_next->pipe_next->expr_node, file);
             cfg_viz_traverse_pipe(pipe->pipe_next->pipe_next, file);
             return;
-        }*/
+        }
         if(pipe->pipe_next->expr_node->content == ENC_PIPE &&
                 pipe->pipe_next->expr_node->layout == ENL_JUNCTION)
         {
@@ -585,19 +585,62 @@ cfg_viz_traverse_pipe(LogPipe *pipe, FILE *file)
         }
     }
 }
+*/
+
+static LogExprNode *
+cfg_viz_print_channel(LogExprNode *node, FILE *file)
+{
+    while(node->next)
+    {
+        cfg_viz_print_edge(node, node->next, file);
+
+        node = node->next;
+    }
+
+    return node;
+}
+
+static void cfg_viz_print_tree(LogExprNode *, FILE *);
+
+static void
+cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
+{
+    LogExprNode *node = fork->next->children;
+
+    while(node)
+    {
+        LogExprNode *n_node = node->children;
+
+        cfg_viz_print_edge(fork, n_node, file);
+        n_node = cfg_viz_print_channel(n_node, file);
+        cfg_viz_print_edge(n_node, join, file);
+
+        node = node->next;
+        if(!node){break;}
+    }
+}
 
 static void
 cfg_viz_print_tree(LogExprNode *node, FILE *file)
 {
     if(node->children)
     {
-        cfg_viz_print_edge(node, node->children, file);
-        cfg_viz_print_tree(node->children, file);
+            cfg_viz_print_edge(node, node->children, file);
+            cfg_viz_print_tree(node->children, file);
     }
     if(node->next)
     {
-        cfg_viz_print_edge(node, node->next, file);
-        cfg_viz_print_tree(node->next, file);
+        if(node->next->content == ENC_PIPE &&
+           node->next->layout == ENL_JUNCTION)
+        {
+            cfg_viz_print_junction(node, node->next->next, file);
+            cfg_viz_print_tree(node->next->next, file);
+        }
+        else
+        {
+            cfg_viz_print_edge(node, node->next, file);
+            cfg_viz_print_tree(node->next, file);
+        }
     }
 }
 
