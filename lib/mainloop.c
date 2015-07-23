@@ -587,6 +587,21 @@ cfg_viz_traverse_pipe(LogPipe *pipe, FILE *file)
 }
 
 static void
+cfg_viz_print_tree(LogExprNode *node, FILE *file)
+{
+    if(node->children)
+    {
+        cfg_viz_print_edge(node, node->children, file);
+        cfg_viz_print_tree(node->children, file);
+    }
+    if(node->next)
+    {
+        cfg_viz_print_edge(node, node->next, file);
+        cfg_viz_print_tree(node->next, file);
+    }
+}
+
+static void
 cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
 {
     LogExprNode *node = (LogExprNode *)value;
@@ -618,7 +633,8 @@ cfg_viz_init(GlobalConfig *config)
         if(pipe->expr_node->content == ENC_SOURCE &&
            pipe->expr_node->layout == ENL_REFERENCE)
         {
-            cfg_viz_traverse_pipe(pipe, file);
+            //cfg_viz_traverse_pipe(pipe, file);
+            cfg_viz_print_tree(pipe->expr_node, file);
 
             count++;
             if(count == color_count)
