@@ -587,6 +587,15 @@ cfg_viz_traverse_pipe(LogPipe *pipe, FILE *file)
 }
 
 static void
+cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
+{
+    LogExprNode *node = (LogExprNode *)value;
+    FILE *file = (FILE *)user_data;
+
+    cfg_viz_print_node_props(node, file);
+}
+
+static void
 cfg_viz_init(GlobalConfig *config)
 {
     FILE *file = fopen("/home/bence/Desktop/cfg_out.dot", "w+");
@@ -598,6 +607,8 @@ cfg_viz_init(GlobalConfig *config)
     }
 
     fprintf(file, "digraph G\n{\n");
+
+    g_hash_table_foreach(config->tree.objects, cfg_viz_print_props, file);
 
     int i;
     for(i = 0; i < config->tree.initialized_pipes->len; i++)
