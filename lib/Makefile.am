@@ -85,6 +85,7 @@ pkginclude_HEADERS			+= \
 	lib/cfg-args.h			\
 	lib/cfg-parser.h		\
 	lib/cfg-tree.h			\
+	lib/cfg-viz.h			\
 	lib/children.h			\
 	lib/crypto.h			\
 	lib/dnscache.h			\
@@ -166,6 +167,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-lexer-subst.c		\
 	lib/cfg-parser.c		\
 	lib/cfg-tree.c			\
+	lib/cfg-viz.c			\
 	lib/children.c			\
 	lib/dnscache.c			\
 	lib/driver.c			\
