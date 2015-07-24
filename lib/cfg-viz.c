@@ -106,9 +106,11 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
     {
         LogExprNode *n_node = node->children;
 
-        cfg_viz_print_edge(fork, n_node, file);
+        //cfg_viz_print_edge(fork, n_node, file);
 
         fprintf(file, "subgraph cluster_%d\n{\n\tlabel=\"junction\";\n", count);
+        fprintf(file, "secret_head%d[style=invis shape=point];\n", count);
+
         n_node = cfg_viz_print_channel(n_node, file);
 
         gchar name[32];
@@ -136,6 +138,11 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
         if(node->next->content == ENC_PIPE &&
            node->next->layout == ENL_JUNCTION)
         {
+            gchar buf[32];
+            cfg_viz_print_node_id(node, buf, sizeof(buf));
+            fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d color=%s];\n",
+                    buf, count, count, color[count]);
+
             cfg_viz_print_junction(node, node->next->next, file);
             cfg_viz_print_tree(node->next->next, file);
         }
@@ -224,6 +231,7 @@ cfg_viz_init(GlobalConfig *config)
     }
 
     fprintf(file, "digraph G\n{\n");
+    fprintf(file, "\tcompound=true;\n");
 
     cfg_viz_print_node_objects(config, file);
     //cfg_viz_print_pipes(config, file);
