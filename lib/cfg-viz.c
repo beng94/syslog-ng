@@ -108,12 +108,12 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
 
         cfg_viz_print_edge(fork, n_node, file);
 
-        fprintf(file, "subgraph cluster_%d\n{\nlabel=\"junction\";\n", count);
+        fprintf(file, "subgraph cluster_%d\n{\n\tlabel=\"junction\";\n", count);
         n_node = cfg_viz_print_channel(n_node, file);
 
         gchar name[32];
         cfg_viz_print_node_id(n_node, name, sizeof(name));
-        fprintf(file, "\"%s\"\n;", name);
+        fprintf(file, "\t\"%s\";\n", name);
 
         fprintf(file, "}\n");
         cfg_viz_print_edge(n_node, join, file);
