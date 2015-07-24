@@ -156,6 +156,62 @@ cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
     cfg_viz_print_node_props(node, file);
 }
 
+static void
+cfg_viz_print_node_objects(GlobalConfig *config, FILE *file)
+{
+    g_hash_table_foreach(config->tree.objects, cfg_viz_print_props, file);
+}
+
+static void
+cfg_viz_print_pipes(GlobalConfig *config, FILE *file)
+{
+    int i;
+    for(i = 0; i < config->tree.initialized_pipes->len; i++)
+    {
+        LogPipe *pipe = (LogPipe *)g_ptr_array_index(config->tree.initialized_pipes, i);
+
+        //if(pipe->expr_node->content == ENC_SOURCE &&
+        //   pipe->expr_node->layout == ENL_REFERENCE)
+        if(pipe->expr_node->layout == ENL_REFERENCE)
+        {
+            /*if(pipe->expr_node->parent->children != pipe->expr_node &&
+               pipe->expr_node->parent->children->content == ENC_SOURCE &&
+               pipe->expr_node->parent->children->layout == ENL_REFERENCE)
+            {
+                continue;
+            }*/
+            cfg_viz_print_tree(pipe->expr_node, file);
+
+            if(++count == color_count) count = 0;
+        }
+    }
+}
+
+static void
+cfg_viz_print_rules(GlobalConfig *config, FILE *file)
+{
+    int i;
+    for(i = 0; i < config->tree.rules->len; i++)
+    {
+        LogPipe *pipe = (LogPipe *)g_ptr_array_index(config->tree.rules, i);
+
+        if(pipe->pipe_next->expr_node->children->layout == ENL_REFERENCE)
+        {
+            /*if(pipe->expr_node->parent->children != pipe->expr_node &&
+               pipe->expr_node->parent->children->content == ENC_SOURCE &&
+               pipe->expr_node->parent->children->layout == ENL_REFERENCE)
+            {
+                continue;
+            }*/
+            cfg_viz_print_tree(pipe->pipe_next->expr_node->children, file);
+
+            if(++count == color_count) count = 0;
+        }
+
+    }
+
+}
+
 void
 cfg_viz_init(GlobalConfig *config)
 {
@@ -169,30 +225,9 @@ cfg_viz_init(GlobalConfig *config)
 
     fprintf(file, "digraph G\n{\n");
 
-    g_hash_table_foreach(config->tree.objects, cfg_viz_print_props, file);
-
-    int i;
-    for(i = 0; i < config->tree.initialized_pipes->len; i++)
-    {
-        LogPipe *pipe = (LogPipe *)g_ptr_array_index(config->tree.initialized_pipes, i);
-
-        if(pipe->expr_node->content == ENC_SOURCE &&
-           pipe->expr_node->layout == ENL_REFERENCE)
-        {
-            if(pipe->expr_node->parent->children != pipe->expr_node &&
-               pipe->expr_node->parent->children->content == ENC_SOURCE &&
-               pipe->expr_node->parent->children->layout == ENL_REFERENCE)
-            {
-                continue;
-            }
-            //cfg_viz_traverse_pipe(pipe, file);
-            cfg_viz_print_tree(pipe->expr_node, file);
-
-            count++;
-            if(count == color_count)
-                count = 0;
-        }
-    }
+    cfg_viz_print_node_objects(config, file);
+    //cfg_viz_print_pipes(config, file);
+    cfg_viz_print_rules(config, file);
 
     fprintf(file, "}");
     fclose(file);
