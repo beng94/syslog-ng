@@ -86,14 +86,26 @@ cfg_viz_print_node_props(LogExprNode *node, FILE *file)
 
 //TODO: Print it in a separete subgraph
 static LogExprNode *
-cfg_viz_print_channel(LogExprNode *node, FILE *file)
+cfg_viz_print_channel(LogExprNode *node, int id, FILE *file)
 {
+    fprintf(file, "\t\tsubgraph cluster_%d_%d\n\t\t{\n\t\tlabel=\"channel\";\n",
+            count, id);
+
+    if(!node->next)
+    {
+        gchar name[32];
+        cfg_viz_print_node_id(node, name, sizeof(name));
+        fprintf(file, "\t\"%s\";\n", name);
+    }
+
     while(node->next)
     {
+        fprintf(file, "\t\t");
         cfg_viz_print_edge(node, node->next, file);
 
         node = node->next;
     }
+    fprintf(file, "\t\t}\n");
 
     return node;
 }
@@ -103,6 +115,7 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
 {
     LogExprNode *node = fork->next->children;
 
+    int i = 0;
     while(node)
     {
         LogExprNode *n_node = node->children;
@@ -112,11 +125,11 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
         fprintf(file, "\nsubgraph cluster_%d\n{\n\tlabel=\"junction\";\n", count);
         fprintf(file, "\tsecret_head%d[style=invis shape=point];\n", count);
 
-        n_node = cfg_viz_print_channel(n_node, file);
+        n_node = cfg_viz_print_channel(n_node, i++, file);
 
-        gchar name[32];
+        /*gchar name[32];
         cfg_viz_print_node_id(n_node, name, sizeof(name));
-        fprintf(file, "\t\"%s\";\n", name);
+        fprintf(file, "\t\"%s\";\n", name);*/
 
         fprintf(file, "}\n\n");
 
