@@ -139,33 +139,42 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
 static void
 cfg_viz_print_tree(LogExprNode *node, FILE *file)
 {
-    if(node->children)
+    LogExprNode *n_node = node;
+    if(n_node->next)
     {
-            cfg_viz_print_edge(node, node->children, file);
-            cfg_viz_print_tree(node->children, file);
+        while(n_node->next->content == ENC_SOURCE)
+        {
+            n_node = n_node->next;
+        }
     }
 
-    if(node->next)
+    if(n_node->children)
     {
-        if(node->next->content == ENC_PIPE &&
-           node->next->layout == ENL_JUNCTION)
+            cfg_viz_print_edge(n_node, node->children, file);
+            cfg_viz_print_tree(n_node->children, file);
+    }
+
+    if(n_node->next)
+    {
+        if(n_node->next->content == ENC_PIPE &&
+           n_node->next->layout == ENL_JUNCTION)
         {
             gchar buf[32];
-            cfg_viz_print_node_id(node, buf, sizeof(buf));
+            cfg_viz_print_node_id(n_node, buf, sizeof(buf));
             fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d color=%s];\n",
                     buf, count, count, color[count]);
 
-            cfg_viz_print_junction(node, node->next->next, file);
+            cfg_viz_print_junction(n_node, n_node->next->next, file);
 
-            cfg_viz_print_node_id(node->next->next, buf, sizeof(buf));
+            cfg_viz_print_node_id(n_node->next->next, buf, sizeof(buf));
             fprintf(file, "\t\secret_head%d -> \"%s\"[ltail=cluster_%d color=%s];\n",
                     count, buf, count, color[count]);
 
-            cfg_viz_print_tree(node->next->next, file);
+            cfg_viz_print_tree(n_node->next->next, file);
         }
         else
         {
-            cfg_viz_print_edge(node, node->next, file);
+            cfg_viz_print_edge(node, n_node->next, file);
             cfg_viz_print_tree(node->next, file);
         }
     }
