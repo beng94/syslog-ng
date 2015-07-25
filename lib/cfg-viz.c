@@ -122,27 +122,17 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
 {
     LogExprNode *node = fork->next->children;
 
-    int i = 0;
-    while(node)
+    int i;
+    for(i = 0; node; node = node->next)
     {
         LogExprNode *n_node = node->children;
-
-        //cfg_viz_print_edge(fork, n_node, file);
 
         fprintf(file, "\nsubgraph cluster_%d\n{\n\tlabel=\"junction\";\n", count);
         fprintf(file, "\tsecret_head%d[style=invis shape=point];\n", count);
 
         n_node = cfg_viz_print_channel(n_node, i++, file);
 
-        /*gchar name[32];
-        cfg_viz_print_node_id(n_node, name, sizeof(name));
-        fprintf(file, "\t\"%s\";\n", name);*/
-
         fprintf(file, "}\n\n");
-
-        //cfg_viz_print_edge(n_node, join, file);
-
-        node = node->next;
     }
 }
 
