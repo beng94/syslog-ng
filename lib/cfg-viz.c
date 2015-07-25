@@ -91,6 +91,13 @@ cfg_viz_print_channel(LogExprNode *node, int id, FILE *file)
     fprintf(file, "\t\tsubgraph cluster_%d_%d\n\t\t{\n\t\tlabel=\"channel\";\n",
             count, id);
 
+    if(!node)
+    {
+        fprintf(file, "\t\tsecret_head_%d_%d [style=invis shape=point];\n", count, id);
+        fprintf(file, "\t\t}\n");
+        return NULL;
+    }
+
     if(!node->next)
     {
         gchar name[32];
