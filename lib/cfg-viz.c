@@ -148,8 +148,8 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
             cfg_viz_print_junction(node, node->next->next, file);
 
             cfg_viz_print_node_id(node->next->next, buf, sizeof(buf));
-            fprintf(file, "\t\"%s\" -> secret_head%d[ltail=cluster_%d color=%s];\n",
-                    buf, count, count, color[count]);
+            fprintf(file, "\t\secret_head%d -> \"%s\"[ltail=cluster_%d color=%s];\n",
+                    count, buf, count, color[count]);
 
             cfg_viz_print_tree(node->next->next, file);
         }
