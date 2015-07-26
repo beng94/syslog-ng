@@ -22,7 +22,7 @@ cfg_viz_get_node_name(LogExprNode *node, gchar* buf, size_t size)
 }
 
 static void
-cfg_viz_print_node_id(LogExprNode *node, gchar* buf, size_t size)
+cfg_viz_get_node_id(LogExprNode *node, gchar* buf, size_t size)
 {
     gchar name_buf[32];
     cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
@@ -38,8 +38,8 @@ cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file
     gchar buf_parent[32];
     gchar buf_child[32];
 
-    cfg_viz_print_node_id(node_parent, buf_parent, sizeof(buf_parent));
-    cfg_viz_print_node_id(node_child, buf_child, sizeof(buf_child));
+    cfg_viz_get_node_id(node_parent, buf_parent, sizeof(buf_parent));
+    cfg_viz_get_node_id(node_child, buf_child, sizeof(buf_child));
 
     fprintf(file, "\t\"%s\" -> \"%s\"[color=%s];\n",
             buf_parent,
@@ -101,7 +101,7 @@ cfg_viz_print_channel(LogExprNode *node, int id, FILE *file)
     if(!node->next)
     {
         gchar name[32];
-        cfg_viz_print_node_id(node, name, sizeof(name));
+        cfg_viz_get_node_id(node, name, sizeof(name));
         fprintf(file, "\t\"%s\";\n", name);
     }
 
@@ -160,13 +160,13 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
            n_node->next->layout == ENL_JUNCTION)
         {
             gchar buf[32];
-            cfg_viz_print_node_id(n_node, buf, sizeof(buf));
+            cfg_viz_get_node_id(n_node, buf, sizeof(buf));
             fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d color=%s];\n",
                     buf, count, count, color[count]);
 
             cfg_viz_print_junction(n_node, n_node->next->next, file);
 
-            cfg_viz_print_node_id(n_node->next->next, buf, sizeof(buf));
+            cfg_viz_get_node_id(n_node->next->next, buf, sizeof(buf));
             fprintf(file, "\t\secret_head%d -> \"%s\"[ltail=cluster_%d color=%s];\n",
                     count, buf, count, color[count]);
 
@@ -187,6 +187,7 @@ cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
     FILE *file = (FILE *)user_data;
 
     cfg_viz_print_node_props(node, file);
+    cfg_viz_get_node_id(node, id, sizeof(id));
 }
 
 static void
