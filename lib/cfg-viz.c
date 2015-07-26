@@ -232,31 +232,6 @@ cfg_viz_print_node_objects(GlobalConfig *config, FILE *file)
 }
 
 static void
-cfg_viz_print_pipes(GlobalConfig *config, FILE *file)
-{
-    int i;
-    for(i = 0; i < config->tree.initialized_pipes->len; i++)
-    {
-        LogPipe *pipe = (LogPipe *)g_ptr_array_index(config->tree.initialized_pipes, i);
-
-        //if(pipe->expr_node->content == ENC_SOURCE &&
-        //   pipe->expr_node->layout == ENL_REFERENCE)
-        if(pipe->expr_node->layout == ENL_REFERENCE)
-        {
-            /*if(pipe->expr_node->parent->children != pipe->expr_node &&
-               pipe->expr_node->parent->children->content == ENC_SOURCE &&
-               pipe->expr_node->parent->children->layout == ENL_REFERENCE)
-            {
-                continue;
-            }*/
-            cfg_viz_print_tree(pipe->expr_node, file);
-
-            if(++count == color_count) count = 0;
-        }
-    }
-}
-
-static void
 cfg_viz_print_rules(GlobalConfig *config, FILE *file)
 {
     int i, length;
