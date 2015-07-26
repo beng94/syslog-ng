@@ -14,11 +14,7 @@ const gchar* color[] =
 static void
 cfg_viz_get_node_name(LogExprNode *node, gchar* buf, size_t size)
 {
-    //To handle filters
-    if(node->layout == ENL_SINGLE && node->content == ENC_PIPE)
-        g_snprintf(buf, size, "%s", node->parent->name);
-    else
-       g_snprintf(buf, size, "%s", node->name);
+    g_snprintf(buf, size, "%s", node->name);
 }
 
 static void
