@@ -147,6 +147,20 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                 cfg_viz_print_tree(node->next, file);
             }
 
+            else if(n_node->next->content == ENC_DESTINATION)
+            {
+                n_node = n_node->next;
+                while(n_node->content == ENC_DESTINATION)
+                {
+                    cfg_viz_print_edge(node, n_node, file);
+                    n_node = n_node->next;
+
+                    if(!n_node) break;
+                }
+
+                    cfg_viz_print_tree(node->next, file);
+            }
+
             else
             {
                 cfg_viz_print_edge(node, n_node->next, file);
@@ -169,6 +183,22 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
 
             cfg_viz_print_tree(node->next->next, file);
         }
+
+        else if(node->next->content == ENC_DESTINATION)
+        {
+            LogExprNode *n_node = node->next;
+            while(n_node->content == ENC_DESTINATION)
+            {
+                cfg_viz_print_edge(node, n_node, file);
+                n_node = n_node->next;
+
+                if(!n_node) break;
+            }
+
+            if(n_node)
+                cfg_viz_print_tree(n_node, file);
+        }
+
         else
         {
             cfg_viz_print_edge(node, node->next, file);
