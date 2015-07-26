@@ -118,6 +118,19 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
 }
 
 static void
+static LogExprNode*
+cfg_viz_skip_sources(LogExprNode *node)
+{
+    while(node->next->content == ENC_SOURCE)
+    {
+        if(node->next)
+            node = node->next;
+        else
+            break;
+    }
+
+    return node;
+}
 cfg_viz_print_tree(LogExprNode *node, FILE *file)
 {
     if(node->children)
@@ -130,11 +143,7 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
     {
         if(node->next->content == ENC_SOURCE)
         {
-            LogExprNode *n_node = node;
-            while(n_node->next->content == ENC_SOURCE)
-            {
-                n_node = n_node->next;
-            }
+            LogExprNode *n_node = cfg_viz_skip_sources(node);
 
             if(n_node->next->content == ENC_PIPE &&
                n_node->next->layout == ENL_JUNCTION)
