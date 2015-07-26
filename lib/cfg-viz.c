@@ -219,7 +219,7 @@ cfg_viz_print_rules(GlobalConfig *config, FILE *file)
 {
     int i, length;
 
-    length = config->tree.rules.len;
+    length = config->tree.rules->len;
     for(i = 0; i < length; i++)
     {
         LogPipe *pipe = (LogPipe *)g_ptr_array_index(config->tree.rules, i);
