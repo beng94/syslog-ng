@@ -131,6 +131,21 @@ cfg_viz_skip_sources(LogExprNode *node)
 
     return node;
 }
+
+static void
+cfg_viz_merge_destinations(LogExprNode *node, LogExprNode *n_node, FILE *file)
+{
+    while(n_node->content == ENC_DESTINATION)
+    {
+        cfg_viz_print_edge(node, n_node, file);
+
+        if(n_node->next)
+            n_node = n_node->next;
+        else
+            break;
+    }
+}
+
 cfg_viz_print_tree(LogExprNode *node, FILE *file)
 {
     if(node->children)
@@ -158,16 +173,9 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
 
             else if(n_node->next->content == ENC_DESTINATION)
             {
-                n_node = n_node->next;
-                while(n_node->content == ENC_DESTINATION)
-                {
-                    cfg_viz_print_edge(node, n_node, file);
-                    n_node = n_node->next;
+                cfg_viz_merge_destinations(node, n_node->next, file);
 
-                    if(!n_node) break;
-                }
-
-                    cfg_viz_print_tree(node->next, file);
+                cfg_viz_print_tree(node->next, file);
             }
 
             else
