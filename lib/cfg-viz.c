@@ -69,21 +69,6 @@ cfg_viz_node_get_shape(const gint content)
     }
 }
 
-static void
-cfg_viz_print_node_props(LogExprNode *node, FILE *file)
-{
-    gchar name_buf[32];
-    gchar node_name[32];
-
-    cfg_viz_print_node_id(node, name_buf, sizeof(name_buf));
-    cfg_viz_get_node_name(node, node_name, sizeof(node_name));
-
-    fprintf(file, "\t\"%s\" [label=\"%s\" shape=\"%s\"];\n",
-                name_buf,
-                node_name,
-                cfg_viz_node_get_shape(node->content));
-}
-
 //TODO: Print it in a separete subgraph
 static LogExprNode *
 cfg_viz_print_channel(LogExprNode *node, int id, FILE *file)
@@ -186,8 +171,16 @@ cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
     LogExprNode *node = (LogExprNode *)value;
     FILE *file = (FILE *)user_data;
 
-    cfg_viz_print_node_props(node, file);
+    gchar id[32];
+    gchar name[32];
+
     cfg_viz_get_node_id(node, id, sizeof(id));
+    cfg_viz_get_node_name(node, name, sizeof(name));
+
+    fprintf(file, "\t\"%s\" [label=\"%s\" shape=\"%s\"];\n",
+                id,
+                name,
+                cfg_viz_node_get_shape(node->content));
 }
 
 static void
