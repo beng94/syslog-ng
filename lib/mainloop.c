@@ -27,6 +27,7 @@
 #include "mainloop-call.h"
 #include "apphook.h"
 #include "cfg.h"
+#include "cfg-viz.h"
 #include "stats/stats-registry.h"
 #include "messages.h"
 #include "children.h"
@@ -511,7 +512,7 @@ main_loop_run(void)
 
 static GOptionEntry main_loop_options[] =
 {
-  { "cgf-visualize",     'q',         0, G_OPTION_ARG_NONE,   &cfg_visualize, "Creates a DOT file for visualizing the config" },
+  { "cgf-visualize",     'g',         0, G_OPTION_ARG_NONE,   &cfg_visualize, "Creates a DOT file for visualizing the config" },
   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
