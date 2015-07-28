@@ -97,6 +97,7 @@ static const gchar *persist_file;
 static const gchar *ctlfilename;
 const gchar *module_path;
 static gchar *preprocess_into = NULL;
+gboolean cfg_visualize = FALSE;
 gboolean syntax_only = FALSE;
 gboolean interactive_mode = FALSE;
 
@@ -461,8 +462,7 @@ main_loop_read_and_init_config(void)
       return 2;
     }
 
-  int cfg_viz = 1;
-  if(cfg_viz)
+  if(cfg_visualize)
     cfg_viz_init(current_configuration);
 
   return 0;
@@ -511,6 +511,7 @@ main_loop_run(void)
 
 static GOptionEntry main_loop_options[] =
 {
+  { "cgf-visualize",     'q',         0, G_OPTION_ARG_NONE,   &cfg_visualize, "Creates a DOT file for visualizing the config" },
   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
