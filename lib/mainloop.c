@@ -453,7 +453,10 @@ main_loop_read_and_init_config(void)
       return 1;
     }
 
-  if (syntax_only || preprocess_into)
+  if(cfg_visualize)
+    cfg_viz_init(current_configuration);
+
+  if (syntax_only || preprocess_into || cfg_visualize)
     {
       return 0;
     }
@@ -462,9 +465,6 @@ main_loop_read_and_init_config(void)
     {
       return 2;
     }
-
-  if(cfg_visualize)
-    cfg_viz_init(current_configuration);
 
   return 0;
 }
