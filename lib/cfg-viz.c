@@ -124,8 +124,7 @@ cfg_viz_skip_sources(LogExprNode *node)
     {
         if(node->next)
             node = node->next;
-        else
-            break;
+        else break;
     }
 
     return node;
@@ -134,18 +133,20 @@ cfg_viz_skip_sources(LogExprNode *node)
 static LogExprNode*
 cfg_viz_merge_destinations(LogExprNode *node, LogExprNode *n_node, FILE *file)
 {
-    while(n_node->content == ENC_DESTINATION)
+    int finish_flag = FALSE;
+    do
     {
+        if(n_node->content != ENC_DESTINATION)
+            finish_flag = TRUE;
+
         cfg_viz_print_edge(node, n_node, file);
 
-        if(n_node->next)
-        {
-            if(n_node->next->content == ENC_DESTINATION)
-                n_node = n_node->next;
-            else break;
-        }
-        else break;
-    }
+        if(n_node->next && !finish_flag)
+            n_node = n_node->next;
+        else
+            break;
+
+    } while(n_node && !finish_flag);
 
     return n_node;
 }
@@ -153,84 +154,12 @@ cfg_viz_merge_destinations(LogExprNode *node, LogExprNode *n_node, FILE *file)
 static void
 cfg_viz_print_tree(LogExprNode *node, FILE *file)
 {
-    if(node->children)
-    {
-            cfg_viz_print_edge(node, node->children, file);
-            cfg_viz_print_tree(node->children, file);
-    }
-
-    if(node->next)
-    {
-        if(node->next->content == ENC_SOURCE)
-        {
-            LogExprNode *n_node = cfg_viz_skip_sources(node);
-
-            if(n_node->next->content == ENC_PIPE &&
-               n_node->next->layout == ENL_JUNCTION)
-            {
-                gchar buf[32];
-                cfg_viz_get_node_id(node, buf, sizeof(buf));
-                fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d color=%s];\n",
-                        buf, count, count, color[count]);
-
-                cfg_viz_print_tree(node->next, file);
-            }
-
-            /*else if(n_node->next->content == ENC_DESTINATION)
-            {
-                cfg_viz_merge_destinations(node, n_node->next, file);
-
-                cfg_viz_print_tree(node->next, file);
-            }*/
-
-            else
-            {
-                cfg_viz_print_edge(node, n_node->next, file);
-                cfg_viz_print_tree(node->next, file);
-            }
-        }
-        else if(node->next->content == ENC_PIPE &&
-                node->next->layout == ENL_JUNCTION)
-        {
-            gchar buf[32];
-            cfg_viz_get_node_id(node, buf, sizeof(buf));
-            fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d color=%s];\n",
-                    buf, count, count, color[count]);
-
-            cfg_viz_print_junction(node, node->next->next, file);
-
-            cfg_viz_get_node_id(node->next->next, buf, sizeof(buf));
-            fprintf(file, "\t\tsecret_head%d -> \"%s\"[ltail=cluster_%d color=%s];\n",
-                    count, buf, count, color[count]);
-
-            cfg_viz_print_tree(node->next->next, file);
-        }
-
-        else if(node->next->content == ENC_DESTINATION)
-        {
-            LogExprNode *n_node = cfg_viz_merge_destinations(node, node->next, file);
-
-            if(n_node)
-                cfg_viz_print_tree(n_node, file);
-        }
-
-        else
-        {
-            cfg_viz_print_edge(node, node->next, file);
-            cfg_viz_print_tree(node->next, file);
-        }
-    }
-}
-
-static void
-cfg_viz_print_tree_1(LogExprNode *node, FILE *file)
-{
     while(node)
     {
         if(node->children)
         {
             cfg_viz_print_edge(node, node->children, file);
-            cfg_viz_print_tree_1(node->children, file);
+            cfg_viz_print_tree(node->children, file);
         }
 
         if(node->next)
@@ -239,10 +168,10 @@ cfg_viz_print_tree_1(LogExprNode *node, FILE *file)
             {
                 case ENC_SOURCE:
                     {
-                        LogExprNode *n_node = cfg_viz_skip_sources(node);
+                        LogExprNode *last_src = cfg_viz_skip_sources(node);
 
-                        if(n_node->next->content == ENC_PIPE &&
-                           n_node->next->layout == ENL_JUNCTION)
+                        if(last_src->next->content == ENC_PIPE &&
+                           last_src->next->layout == ENL_JUNCTION)
                         {
                             gchar buf[32];
                             cfg_viz_get_node_id(node, buf, sizeof(buf));
@@ -251,7 +180,8 @@ cfg_viz_print_tree_1(LogExprNode *node, FILE *file)
                         }
                         else
                         {
-                            cfg_viz_print_edge(node, n_node->next, file);
+                            cfg_viz_merge_destinations(node, last_src->next, file);
+                            //cfg_viz_print_edge(node, last_src->next, file);
                         }
                         break;
                     }
@@ -259,10 +189,11 @@ cfg_viz_print_tree_1(LogExprNode *node, FILE *file)
                 case ENC_DESTINATION:
                     {
                         node = cfg_viz_merge_destinations(node, node->next, file);
+                        continue;
                         break;
                     }
                 case ENC_PIPE:
-                    if(node->layout == ENL_JUNCTION)
+                    if(node->next->layout == ENL_JUNCTION)
                     {
                         gchar buf[32];
                         cfg_viz_get_node_id(node, buf, sizeof(buf));
@@ -326,7 +257,7 @@ cfg_viz_print_rules(GlobalConfig *config, FILE *file)
 
         if(pipe->pipe_next->expr_node->children->layout == ENL_REFERENCE)
         {
-            cfg_viz_print_tree_1(pipe->pipe_next->expr_node->children, file);
+            cfg_viz_print_tree(pipe->pipe_next->expr_node->children, file);
 
             if(++count == color_count) count = 0;
         }
