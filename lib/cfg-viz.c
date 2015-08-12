@@ -207,7 +207,7 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                                 count, buf, count, color[count]);
 
                         //FIXME: Might segfault if there's no next->next
-                        node = node->next->next;
+                        node = node->next;
                     }
                     break;
                 default:
