@@ -99,6 +99,7 @@ cfg_viz_print_channel(LogExprNode *node, int id, FILE *file)
     return node;
 }
 
+//TODO: join is not used
 static void
 cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
 {
@@ -203,10 +204,12 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
 
                         cfg_viz_print_junction(node, node->next->next, file);
 
-                        cfg_viz_get_node_id(node->next->next, buf, sizeof(buf));
-                        fprintf(file, "\t\tsecret_head%d -> \"%s\"[ltail=cluster_%d__%d color=%s];\n",
-                                junc_count, buf, count, junc_count, color[count]);
-
+                        if(node->next->next)
+                        {
+                            cfg_viz_get_node_id(node->next->next, buf, sizeof(buf));
+                            fprintf(file, "\t\tsecret_head%d -> \"%s\"[ltail=cluster_%d__%d color=%s];\n",
+                                    junc_count, buf, count, junc_count, color[count]);
+                        }
                         //FIXME: Might segfault if there's no next->next
                         node = node->next;
                         junc_count++;
