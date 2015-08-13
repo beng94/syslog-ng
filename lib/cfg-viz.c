@@ -1,6 +1,7 @@
 #include <cfg-viz.h>
 
 static int count = 0;
+static int junc_count = 0;
 static int color_count = 31;
 
 const gchar* color[] =
@@ -108,8 +109,8 @@ cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
     {
         LogExprNode *n_node = node->children;
 
-        fprintf(file, "\nsubgraph cluster_%d\n{\n\tlabel=\"junction\";\n", count);
-        fprintf(file, "\tsecret_head%d[style=invis shape=point];\n", count);
+        fprintf(file, "\nsubgraph cluster_%d__%d\n{\n\tlabel=\"junction\";\n", count, junc_count);
+        fprintf(file, "\tsecret_head%d[style=invis shape=point];\n", junc_count);
 
         n_node = cfg_viz_print_channel(n_node, i++, file);
 
@@ -175,8 +176,8 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                         {
                             gchar buf[32];
                             cfg_viz_get_node_id(node, buf, sizeof(buf));
-                            fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d color=%s];\n",
-                                    buf, count, count, color[count]);
+                            fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d__%d color=%s];\n",
+                                    buf, junc_count, count, junc_count, color[count]);
                         }
                         else
                         {
@@ -197,17 +198,18 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                     {
                         gchar buf[32];
                         cfg_viz_get_node_id(node, buf, sizeof(buf));
-                        fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d color=%s];\n",
-                                buf, count, count, color[count]);
+                        fprintf(file, "\t\"%s\" -> secret_head%d[lhead=cluster_%d__%d color=%s];\n",
+                                buf, junc_count, count, junc_count, color[count]);
 
                         cfg_viz_print_junction(node, node->next->next, file);
 
                         cfg_viz_get_node_id(node->next->next, buf, sizeof(buf));
-                        fprintf(file, "\t\tsecret_head%d -> \"%s\"[ltail=cluster_%d color=%s];\n",
-                                count, buf, count, color[count]);
+                        fprintf(file, "\t\tsecret_head%d -> \"%s\"[ltail=cluster_%d__%d color=%s];\n",
+                                junc_count, buf, count, junc_count, color[count]);
 
                         //FIXME: Might segfault if there's no next->next
                         node = node->next;
+                        junc_count++;
                     }
                     break;
                 default:
@@ -219,7 +221,6 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
         node = node->next;
     }
 }
-
 
 static void
 cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
@@ -261,11 +262,8 @@ cfg_viz_print_rules(GlobalConfig *config, FILE *file)
 
             if(++count == color_count) count = 0;
         }
-
     }
-
 }
-
 
 void
 cfg_viz_init(GlobalConfig *config)
