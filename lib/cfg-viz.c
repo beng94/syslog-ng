@@ -54,8 +54,7 @@ cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file
     cfg_viz_get_node_id(node_parent, tail_name, sizeof(tail_name));
     cfg_viz_get_node_props(node_parent, FALSE, tail_props, sizeof(tail_props));
 
-    if(node_parent->content == ENC_PIPE && node_parent->layout == ENL_JUNCTION &&
-       node_child->content == ENC_PIPE && node_child->layout == ENL_JUNCTION)
+    if(node_child->content == ENC_PIPE && node_child->layout == ENL_JUNCTION)
         junc_count++;
 
     cfg_viz_get_node_id(node_child, head_name, sizeof(head_name));
@@ -214,12 +213,8 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                 case ENC_PIPE:
                     if(node->next->layout == ENL_JUNCTION)
                     {
-                        //junc_count++;
                         cfg_viz_print_edge(node, node->next, file);
                         cfg_viz_print_junction(node, node->next->next, file);
-
-                        //cfg_viz_print_edge(node->next, node->next->next, file);
-                        //node = node->next;
                     }
                     break;
                 default:
