@@ -24,41 +24,45 @@ cfg_viz_get_node_id(LogExprNode *node, gchar* buf, size_t size)
     gchar name_buf[32];
     cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
 
-     g_snprintf(buf, size, "%d%s",
-             node->content,
-             name_buf);
+    if(node->content == ENC_PIPE && node->layout == ENL_JUNCTION)
+        g_snprintf(buf, size, "secret_head%d", junc_count);
+    else
+        g_snprintf(buf, size, "%d%s", node->content, name_buf);
 }
 
 static void
 cfg_viz_get_node_props(LogExprNode *node, gboolean head, gchar* buf, size_t size)
 {
-     if(node->content == ENC_PIPE &&
-        node->layout == ENL_JUNCTION)
-     {
-         //if(head) g_snprintf(buf, size, "lhead=");
-         //else g_snprintf(buf, size, "ltail=");
-
-         g_snprintf(buf, size, "lhead=cluster_%d__%d", count, junc_count);
-     }
-     else
-     {
-          g_snprintf(buf, size, "");
-     }
+    if(node->content == ENC_PIPE &&
+       node->layout == ENL_JUNCTION)
+    {
+       if(head) g_snprintf(buf, size, "lhead=cluster_%d__%d", count, junc_count);
+       else g_snprintf(buf, size, "ltail=cluster_%d__%d", count, junc_count);
+    }
+    else g_snprintf(buf, size, "\0'");
+    //else leave buf empty
 }
 
 static void
 cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file)
 {
-    gchar buf_parent[32];
-    gchar buf_child[32];
+    gchar tail_name[32];
+    gchar tail_props[32];
+    gchar head_name[32];
+    gchar head_props[32];
 
-    cfg_viz_get_node_id(node_parent, buf_parent, sizeof(buf_parent));
-    cfg_viz_get_node_id(node_child, buf_child, sizeof(buf_child));
+    cfg_viz_get_node_id(node_parent, tail_name, sizeof(tail_name));
+    cfg_viz_get_node_props(node_parent, FALSE, tail_props, sizeof(tail_props));
 
-    fprintf(file, "\t\"%s\" -> \"%s\"[color=%s];\n",
-            buf_parent,
-            buf_child,
-            color[count]);
+    if(node_parent->content == ENC_PIPE && node_parent->layout == ENL_JUNCTION &&
+       node_child->content == ENC_PIPE && node_child->layout == ENL_JUNCTION)
+        junc_count++;
+
+    cfg_viz_get_node_id(node_child, head_name, sizeof(head_name));
+    cfg_viz_get_node_props(node_child, TRUE, head_props, sizeof(head_props));
+
+    fprintf(file, "\t\"%s\" -> \"%s\" [%s %s color=%s];\n",
+            tail_name, head_name, tail_props, head_props, color[count]);
 }
 
 static const char*
@@ -175,11 +179,11 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
 {
     while(node)
     {
-        if(node->children)
+        /*if(node->children)
         {
             cfg_viz_print_edge(node, node->children, file);
             cfg_viz_print_tree(node->children, file);
-        }
+        }*/
 
         if(node->next)
         {
@@ -189,17 +193,11 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                     {
                         LogExprNode *last_src = cfg_viz_skip_sources(node);
 
+                        //TODO: Do I really need this condition?
                         if(last_src->next->content == ENC_PIPE &&
                            last_src->next->layout == ENL_JUNCTION)
                         {
-                            gchar buf_name[32];
-                            gchar buf_props[32];
-
-                            cfg_viz_get_node_id(node, buf_name, sizeof(buf_name));
-                            cfg_viz_get_node_props(last_src->next, TRUE, buf_props, sizeof(buf_props));
-
-                            fprintf(file, "\t\"%s\" -> secret_head%d[%s color=%s];\n",
-                                    buf_name, junc_count, buf_props, color[count]);
+                            cfg_viz_print_edge(node, last_src->next, file);
                         }
                         else
                         {
@@ -216,36 +214,12 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                 case ENC_PIPE:
                     if(node->next->layout == ENL_JUNCTION)
                     {
-                        //TODO: buf_name and props refer to different nodes, but it's not clear from the names
-                        gchar buf_name[32];
-                        gchar buf_props[32];
-
-                        cfg_viz_get_node_id(node, buf_name, sizeof(buf_name));
-                        cfg_viz_get_node_props(node->next, TRUE, buf_props, sizeof(buf_props));
-
-                        fprintf(file, "\t\"%s\" -> secret_head%d[%s color=%s];\n",
-                                buf_name, junc_count, buf_props, color[count]);
-
+                        //junc_count++;
+                        cfg_viz_print_edge(node, node->next, file);
                         cfg_viz_print_junction(node, node->next->next, file);
 
-                        if(node->next->next)
-                        {
-                            if(node->next->next->content == ENC_PIPE &&
-                               node->next->next->layout == ENL_JUNCTION)
-                            {
-                                fprintf(file, "\t\tsecret_head%d -> secret_head%d[ltail=%s lhead = cluster_%d__%d color=%s]",
-                                        junc_count, junc_count + 1, buf_props, count, junc_count + 1, color[count]);
-                            }
-                            else
-                            {
-                                cfg_viz_get_node_id(node->next->next, buf_name, sizeof(buf_name));
-                                fprintf(file, "\t\tsecret_head%d -> \"%s\"[ltail=cluster_%d__%d color=%s];\n",
-                                        junc_count, buf_name, count, junc_count, color[count]);
-                            }
-                       }
-
-                        node = node->next;
-                        junc_count++;
+                        //cfg_viz_print_edge(node->next, node->next->next, file);
+                        //node = node->next;
                     }
                     break;
                 default:
