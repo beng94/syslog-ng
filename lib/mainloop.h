@@ -28,7 +28,7 @@
 #include "thread-utils.h"
 
 
-extern gboolean cfg_visualize;
+extern const gchar *cfg_visualize;
 extern gboolean syntax_only;
 extern gboolean __main_loop_is_terminating;
 extern ThreadId main_thread_handle;

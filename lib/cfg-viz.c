@@ -276,9 +276,9 @@ cfg_viz_print_rules(GlobalConfig *config, FILE *file)
 }
 
 void
-cfg_viz_init(GlobalConfig *config)
+cfg_viz_init(GlobalConfig *config, const gchar *file_name)
 {
-    FILE *file = fopen("/home/bence/Desktop/cfg_out.dot", "w+");
+    FILE *file = fopen(file_name, "w+");
 
     if(!file)
     {
