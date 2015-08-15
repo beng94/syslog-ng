@@ -72,12 +72,12 @@ cfg_viz_node_get_shape(const gint content)
 static LogExprNode *
 cfg_viz_print_channel(LogExprNode *node, const int id, FILE *file)
 {
-    fprintf(file, "\t\tsubgraph cluster_%d_%d\n\t\t{\n\t\tlabel=\"channel\";\n",
+    fprintf(file, "\t\tsubgraph cluster_%d_%d\n\t\t{\n\t\t\tlabel=\"channel\";\n",
             count, id);
 
     if(!node)
     {
-        fprintf(file, "\t\tsecret_head_%d_%d [style=invis shape=point];\n", count, id);
+        fprintf(file, "\t\t\tsecret_head_%d_%d [style=invis shape=point];\n", count, id);
         fprintf(file, "\t\t}\n");
         return NULL;
     }
@@ -111,12 +111,12 @@ cfg_viz_print_junction(const LogExprNode *fork, FILE *file)
     {
         LogExprNode *n_node = node->children;
 
-        fprintf(file, "\nsubgraph cluster_%d__%d\n{\n\tlabel=\"junction\";\n", count, junc_count);
-        fprintf(file, "\tsecret_head%d[style=invis shape=point];\n", junc_count);
+        fprintf(file, "\n\tsubgraph cluster_%d__%d\n\t{\n\t\tlabel=\"junction\";\n", count, junc_count);
+        fprintf(file, "\t\tsecret_head%d[style=invis shape=point];\n", junc_count);
 
         n_node = cfg_viz_print_channel(n_node, i++, file);
 
-        fprintf(file, "}\n\n");
+        fprintf(file, "\t}\n\n");
     }
 }
 
@@ -168,6 +168,7 @@ cfg_viz_print_tree(LogExprNode *node, FILE *file)
                 {
                     LogExprNode *last_src = cfg_viz_skip_sources(node);
 
+                    //Not just print_edge, see: source, source, dest, dest
                     cfg_viz_merge_destinations(node, last_src->next, file);
                     break;
                 }
