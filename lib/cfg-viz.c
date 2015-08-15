@@ -1,5 +1,12 @@
 #include <cfg-viz.h>
 
+#define PIPE_SHAPE "triangle"
+#define SOURCE_SHAPE "box"
+#define DESTINATION_SHAPE "doublecircle"
+#define FILTER_SHAPE "diamond"
+#define PARSER_SHAPE "circle"
+#define REWRITE_SHAPE "parallelogram"
+
 static int count = 0;
 static int junc_count = 0;
 static int color_count = 31;
@@ -59,12 +66,12 @@ cfg_viz_node_get_shape(const gint content)
 {
     switch(content)
     {
-        case ENC_PIPE: return "triangle";
-        case ENC_SOURCE: return "box";
-        case ENC_DESTINATION: return "doublecircle";
-        case ENC_FILTER: return "diamond";
-        case ENC_PARSER: return "circle";
-        case ENC_REWRITE: return "parallelogram";
+        case ENC_PIPE: return PIPE_SHAPE;
+        case ENC_SOURCE: return SOURCE_SHAPE;
+        case ENC_DESTINATION: return DESTINATION_SHAPE;
+        case ENC_FILTER: return FILTER_SHAPE;
+        case ENC_PARSER: return PARSER_SHAPE;
+        case ENC_REWRITE: return REWRITE_SHAPE;
         default: return "star";
     }
 }
@@ -233,6 +240,25 @@ cfg_viz_print_node_objects(const GlobalConfig *config, FILE *file)
     g_hash_table_foreach(config->tree.objects, cfg_viz_print_props, file);
 }
 
+static void
+cfg_viz_print_legend(FILE *file)
+{
+
+    fprintf(file, "\n\tsubgraph cluster {\n");
+    fprintf(file, "\t\tfixedsize=\"true\";\n");
+    fprintf(file, "\t\trankdir = \"TB\";\n");
+    fprintf(file, "\t\tlabel = \"Legend\";\n");
+
+    fprintf(file, "\n\t\t\"filter\" [shape = %s width = 1.5];\n", FILTER_SHAPE);
+    fprintf(file, "\t\t\"parser\" [shape = %s width = 1.5];\n", PARSER_SHAPE);
+    fprintf(file, "\t\t\"rewrite\" [shape = %s width = 1.5];\n", REWRITE_SHAPE);
+    fprintf(file, "\t\t\"source\" [shape = %s width = 1.5];\n", SOURCE_SHAPE);
+    fprintf(file, "\t\t\"destination\" [shape = %s width = 1.5];\n", DESTINATION_SHAPE);
+
+    fprintf(file, "\t\t\"filter\" -> \"parser\" -> \"rewrite\" -> \"source\" -> \"destination\" [style=\"invis\"];\n");
+    fprintf(file, "\t}\n\n");
+}
+
 void
 cfg_viz_init(const GlobalConfig *config, const gchar *file_name)
 {
@@ -247,6 +273,7 @@ cfg_viz_init(const GlobalConfig *config, const gchar *file_name)
     fprintf(file, "digraph G\n{\n");
     fprintf(file, "\tcompound=true;\n");
 
+    cfg_viz_print_legend(file);
     cfg_viz_print_node_objects(config, file);
     cfg_viz_print_rules(config, file);
 
