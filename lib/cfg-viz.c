@@ -13,38 +13,27 @@ const gchar* color[] =
   "royalblue", "tan", "yellow", "violet", "yellowgreen" };
 
 static void
-cfg_viz_get_node_name(LogExprNode *node, gchar* buf, size_t size)
+cfg_viz_get_node_id(const LogExprNode *node, gchar* buf, const size_t size)
 {
-    g_snprintf(buf, size, "%s", node->name);
-}
-
-static void
-cfg_viz_get_node_id(LogExprNode *node, gchar* buf, size_t size)
-{
-    gchar name_buf[32];
-    cfg_viz_get_node_name(node, name_buf, sizeof(name_buf));
-
     if(node->content == ENC_PIPE && node->layout == ENL_JUNCTION)
         g_snprintf(buf, size, "secret_head%d", junc_count);
     else
-        g_snprintf(buf, size, "%d%s", node->content, name_buf);
+        g_snprintf(buf, size, "%d%s", node->content, node->name);
 }
 
 static void
-cfg_viz_get_node_props(LogExprNode *node, gboolean head, gchar* buf, size_t size)
+cfg_viz_get_node_props(const LogExprNode *node, const gboolean head, gchar* buf, const size_t size)
 {
-    if(node->content == ENC_PIPE &&
-       node->layout == ENL_JUNCTION)
+    if(node->content == ENC_PIPE && node->layout == ENL_JUNCTION)
     {
        if(head) g_snprintf(buf, size, "lhead=cluster_%d__%d", count, junc_count);
        else g_snprintf(buf, size, "ltail=cluster_%d__%d", count, junc_count);
     }
-    else g_snprintf(buf, size, "\0'");
-    //else leave buf empty
+    else buf[0] = '\0';
 }
 
 static void
-cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file)
+cfg_viz_print_edge(const LogExprNode *node_parent, const LogExprNode *node_child, FILE *file)
 {
     gchar tail_name[32];
     gchar tail_props[32];
@@ -54,6 +43,7 @@ cfg_viz_print_edge(LogExprNode *node_parent, LogExprNode *node_child, FILE *file
     cfg_viz_get_node_id(node_parent, tail_name, sizeof(tail_name));
     cfg_viz_get_node_props(node_parent, FALSE, tail_props, sizeof(tail_props));
 
+    //To distinguish different junctions
     if(node_child->content == ENC_PIPE && node_child->layout == ENL_JUNCTION)
         junc_count++;
 
@@ -69,26 +59,18 @@ cfg_viz_node_get_shape(const gint content)
 {
     switch(content)
     {
-        case ENC_PIPE:
-            return "triangle";
-        case ENC_SOURCE:
-            return "box";
-        case ENC_DESTINATION:
-            return "doublecircle";
-        case ENC_FILTER:
-            return "diamond";
-        case ENC_PARSER:
-            return "circle";
-        case ENC_REWRITE:
-            return "parallelogram";
-        default:
-            return "star";
+        case ENC_PIPE: return "triangle";
+        case ENC_SOURCE: return "box";
+        case ENC_DESTINATION: return "doublecircle";
+        case ENC_FILTER: return "diamond";
+        case ENC_PARSER: return "circle";
+        case ENC_REWRITE: return "parallelogram";
+        default: return "star";
     }
 }
 
-//TODO: Print it in a separete subgraph
 static LogExprNode *
-cfg_viz_print_channel(LogExprNode *node, int id, FILE *file)
+cfg_viz_print_channel(LogExprNode *node, const int id, FILE *file)
 {
     fprintf(file, "\t\tsubgraph cluster_%d_%d\n\t\t{\n\t\tlabel=\"channel\";\n",
             count, id);
@@ -119,9 +101,8 @@ cfg_viz_print_channel(LogExprNode *node, int id, FILE *file)
     return node;
 }
 
-//TODO: join is not used
 static void
-cfg_viz_print_junction(LogExprNode *fork, LogExprNode *join, FILE *file)
+cfg_viz_print_junction(const LogExprNode *fork, FILE *file)
 {
     LogExprNode *node = fork->next->children;
 
@@ -144,16 +125,16 @@ cfg_viz_skip_sources(LogExprNode *node)
 {
     while(node->next->content == ENC_SOURCE)
     {
-        if(node->next)
-            node = node->next;
+        if(node->next) node = node->next;
         else break;
     }
 
     return node;
 }
 
+//TODO: It's disgusting
 static LogExprNode*
-cfg_viz_merge_destinations(LogExprNode *node, LogExprNode *n_node, FILE *file)
+cfg_viz_merge_destinations(const LogExprNode *node, LogExprNode *n_node, FILE *file)
 {
     int finish_flag = FALSE;
     do
@@ -173,86 +154,48 @@ cfg_viz_merge_destinations(LogExprNode *node, LogExprNode *n_node, FILE *file)
     return n_node;
 }
 
+/* Iterates through the tree in the given LogExprNode writing it's
+ * node's to the output. It displays all the nodes according to their types.
+*/
 static void
 cfg_viz_print_tree(LogExprNode *node, FILE *file)
 {
-    while(node)
+    while(node->next)
     {
-        /*if(node->children)
+        switch(node->next->content)
         {
-            cfg_viz_print_edge(node, node->children, file);
-            cfg_viz_print_tree(node->children, file);
-        }*/
+            case ENC_SOURCE:
+                {
+                    LogExprNode *last_src = cfg_viz_skip_sources(node);
 
-        if(node->next)
-        {
-            switch(node->next->content)
-            {
-                case ENC_SOURCE:
-                    {
-                        LogExprNode *last_src = cfg_viz_skip_sources(node);
-
-                        //TODO: Do I really need this condition?
-                        if(last_src->next->content == ENC_PIPE &&
-                           last_src->next->layout == ENL_JUNCTION)
-                        {
-                            cfg_viz_print_edge(node, last_src->next, file);
-                        }
-                        else
-                        {
-                            cfg_viz_merge_destinations(node, last_src->next, file);
-                        }
-                        break;
-                    }
-
-                case ENC_DESTINATION:
-                    {
-                        node = cfg_viz_merge_destinations(node, node->next, file);
-                        continue;
-                    }
-                case ENC_PIPE:
-                    if(node->next->layout == ENL_JUNCTION)
-                    {
-                        cfg_viz_print_edge(node, node->next, file);
-                        cfg_viz_print_junction(node, node->next->next, file);
-                    }
+                    cfg_viz_merge_destinations(node, last_src->next, file);
                     break;
-                default:
+                }
+
+            case ENC_DESTINATION:
+                {
+                    node = cfg_viz_merge_destinations(node, node->next, file);
+                    continue;
+                }
+            case ENC_PIPE:
+                if(node->next->layout == ENL_JUNCTION)
+                {
                     cfg_viz_print_edge(node, node->next, file);
-                    break;
-            }
+                    cfg_viz_print_junction(node, file);
+                }
+                break;
+            default:
+                cfg_viz_print_edge(node, node->next, file);
+                break;
         }
 
         node = node->next;
     }
 }
 
+/* Each LogPipe is printed with a different color */
 static void
-cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
-{
-    LogExprNode *node = (LogExprNode *)value;
-    FILE *file = (FILE *)user_data;
-
-    gchar id[32];
-    gchar name[32];
-
-    cfg_viz_get_node_id(node, id, sizeof(id));
-    cfg_viz_get_node_name(node, name, sizeof(name));
-
-    fprintf(file, "\t\"%s\" [label=\"%s\" shape=\"%s\"];\n",
-                id,
-                name,
-                cfg_viz_node_get_shape(node->content));
-}
-
-static void
-cfg_viz_print_node_objects(GlobalConfig *config, FILE *file)
-{
-    g_hash_table_foreach(config->tree.objects, cfg_viz_print_props, file);
-}
-
-static void
-cfg_viz_print_rules(GlobalConfig *config, FILE *file)
+cfg_viz_print_rules(const GlobalConfig *config, FILE *file)
 {
     int i, length;
 
@@ -260,18 +203,43 @@ cfg_viz_print_rules(GlobalConfig *config, FILE *file)
     for(i = 0; i < length; i++)
     {
         LogPipe *pipe = (LogPipe *)g_ptr_array_index(config->tree.rules, i);
+        LogExprNode *head = pipe->pipe_next->expr_node->children;
 
-        if(pipe->pipe_next->expr_node->children->layout == ENL_REFERENCE)
-        {
-            cfg_viz_print_tree(pipe->pipe_next->expr_node->children, file);
+        cfg_viz_print_tree(head, file);
 
-            if(++count == color_count) count = 0;
-        }
+        //To handle when we run out of colors
+        if(++count == color_count) count = 0;
     }
 }
 
+/* It is necessary to print out all the nodes (source, filter, parser,
+ * rewrite, destination) at first, because this way it can be seen if
+ * a node is not part of any LogPipes.
+ *
+ * The id is needed to distinguish different types of nodes with the same
+ * name, but in the graph the name text will be seen.
+ */
+static void
+cfg_viz_print_props(gpointer key, gpointer value, gpointer user_data)
+{
+    LogExprNode *node = (LogExprNode *)value;
+    FILE *file = (FILE *)user_data;
+    gchar id[32];
+
+    cfg_viz_get_node_id(node, id, sizeof(id));
+
+    fprintf(file, "\t\"%s\" [label=\"%s\" shape=\"%s\"];\n",
+            id, node->name, cfg_viz_node_get_shape(node->content));
+}
+
+static void
+cfg_viz_print_node_objects(const GlobalConfig *config, FILE *file)
+{
+    g_hash_table_foreach(config->tree.objects, cfg_viz_print_props, file);
+}
+
 void
-cfg_viz_init(GlobalConfig *config, const gchar *file_name)
+cfg_viz_init(const GlobalConfig *config, const gchar *file_name)
 {
     FILE *file = fopen(file_name, "w+");
 
@@ -285,9 +253,9 @@ cfg_viz_init(GlobalConfig *config, const gchar *file_name)
     fprintf(file, "\tcompound=true;\n");
 
     cfg_viz_print_node_objects(config, file);
-    //cfg_viz_print_pipes(config, file);
     cfg_viz_print_rules(config, file);
 
     fprintf(file, "}");
     fclose(file);
 }
+
