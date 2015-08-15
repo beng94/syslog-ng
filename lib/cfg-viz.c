@@ -132,24 +132,18 @@ cfg_viz_skip_sources(LogExprNode *node)
     return node;
 }
 
-//TODO: It's disgusting
 static LogExprNode*
 cfg_viz_merge_destinations(const LogExprNode *node, LogExprNode *n_node, FILE *file)
 {
-    int finish_flag = FALSE;
     do
     {
-        if(n_node->content != ENC_DESTINATION)
-            finish_flag = TRUE;
-
         cfg_viz_print_edge(node, n_node, file);
 
-        if(n_node->next && !finish_flag)
-            n_node = n_node->next;
-        else
+        if(n_node->content != ENC_DESTINATION || n_node->next == NULL)
             break;
+        n_node = n_node->next;
 
-    } while(n_node && !finish_flag);
+    } while(n_node);
 
     return n_node;
 }
