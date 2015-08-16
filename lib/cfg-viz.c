@@ -76,17 +76,24 @@ cfg_viz_node_get_shape(const gint content)
     }
 }
 
-static LogExprNode *
+//TODO: try to make it nice
+static void
 cfg_viz_print_channel(LogExprNode *node, const int id, FILE *file)
 {
-    fprintf(file, "\t\tsubgraph cluster_%d_%d\n\t\t{\n\t\t\tlabel=\"channel\";\n",
-            count, id);
+    fprintf(file,
+    "\t\tsubgraph cluster_%d_%d\n" \
+    "\t\t{\n" \
+    "\t\t\tlabel=\"channel\";\n",
+    count, id);
 
     if(!node)
     {
-        fprintf(file, "\t\t\tsecret_head_%d_%d [style=invis shape=point];\n", count, id);
-        fprintf(file, "\t\t}\n");
-        return NULL;
+        fprintf(file,
+        "\t\t\tsecret_head_%d_%d [style=invis shape=point];\n" \
+        "\t\t}\n",
+        count, id);
+
+        return;
     }
 
     if(!node->next)
@@ -104,8 +111,6 @@ cfg_viz_print_channel(LogExprNode *node, const int id, FILE *file)
         node = node->next;
     }
     fprintf(file, "\t\t}\n");
-
-    return node;
 }
 
 static void
@@ -116,12 +121,13 @@ cfg_viz_print_junction(const LogExprNode *fork, FILE *file)
     int i;
     for(i = 0; node; node = node->next)
     {
-        LogExprNode *n_node = node->children;
+        fprintf(file,
+        "\n\tsubgraph cluster_%d__%d\n" \
+        "\t{\n\t\tlabel=\"junction\";\n" \
+        "\t\tsecret_head%d[style=invis shape=point];\n",
+        count, junc_count, junc_count);
 
-        fprintf(file, "\n\tsubgraph cluster_%d__%d\n\t{\n\t\tlabel=\"junction\";\n", count, junc_count);
-        fprintf(file, "\t\tsecret_head%d[style=invis shape=point];\n", junc_count);
-
-        n_node = cfg_viz_print_channel(n_node, i++, file);
+        cfg_viz_print_channel(node->children, i++, file);
 
         fprintf(file, "\t}\n\n");
     }
@@ -130,10 +136,10 @@ cfg_viz_print_junction(const LogExprNode *fork, FILE *file)
 static LogExprNode*
 cfg_viz_skip_sources(LogExprNode *node)
 {
-    while(node->next->content == ENC_SOURCE)
+    while(node->next)
     {
-        if(node->next) node = node->next;
-        else break;
+         if(node->next->content != ENC_SOURCE) break;
+         node = node->next;
     }
 
     return node;
@@ -243,20 +249,19 @@ cfg_viz_print_node_objects(const GlobalConfig *config, FILE *file)
 static void
 cfg_viz_print_legend(FILE *file)
 {
-
-    fprintf(file, "\n\tsubgraph cluster {\n");
-    fprintf(file, "\t\tfixedsize=\"true\";\n");
-    fprintf(file, "\t\trankdir = \"TB\";\n");
-    fprintf(file, "\t\tlabel = \"Legend\";\n");
-
-    fprintf(file, "\n\t\t\"filter\" [shape = %s width = 1.5];\n", FILTER_SHAPE);
-    fprintf(file, "\t\t\"parser\" [shape = %s width = 1.5];\n", PARSER_SHAPE);
-    fprintf(file, "\t\t\"rewrite\" [shape = %s width = 1.5];\n", REWRITE_SHAPE);
-    fprintf(file, "\t\t\"source\" [shape = %s width = 1.5];\n", SOURCE_SHAPE);
-    fprintf(file, "\t\t\"destination\" [shape = %s width = 1.5];\n", DESTINATION_SHAPE);
-
-    fprintf(file, "\t\t\"filter\" -> \"parser\" -> \"rewrite\" -> \"source\" -> \"destination\" [style=\"invis\"];\n");
-    fprintf(file, "\t}\n\n");
+    fprintf(file,
+    "\n\tsubgraph cluster {\n" \
+    "\t\tlabel = \"Legend\";\n" \
+    "\t\tedge[color=\"transparent\" minlen=\"0.5\"]" \
+    "\n" \
+    "\t\t\"filter\" [shape = %s];\n"  \
+    "\t\t\"parser\" [shape = %s];\n" \
+    "\t\t\"rewrite\" [shape = %s];\n"  \
+    "\t\t\"source\" [shape = %s];\n"  \
+    "\t\t\"destination\" [shape = %s];\n"  \
+    "\t\t\"filter\" -> \"parser\" -> \"rewrite\" -> \"source\" -> \"destination\";\n" \
+    "\t}\n\n",
+    FILTER_SHAPE, PARSER_SHAPE, REWRITE_SHAPE, SOURCE_SHAPE, DESTINATION_SHAPE);
 }
 
 void
